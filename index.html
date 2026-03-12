@@ -57,7 +57,7 @@
         .result-box {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
+            border-radius::20px;
             border: 2px solid rgba(255, 255, 255, 0.2);
             padding: 32px 24px;
             margin-bottom: 32px;
@@ -159,7 +159,7 @@
         
         <div class="category-buttons">
             <button class="category-btn active" data-category="motivational" onclick="getSentence('motivational')">💪 励志</button>
-        <button class="category-btn" data-category="humorous" onclick="getSentence('humorous')">😄 幽默</button>
+            <button class="category-btn" data-category="humorous" onclick="getSentence('humorous')">😄 幽默</button>
             <button class="category-btn" data-category="philosophical" onclick="getSentence('philosophical')">🤔 哲理</button>
             <button class="category-btn" data-category="romantic" onclick="getSentence('romantic')">❤️ 情话</button>
         </div>
@@ -184,7 +184,16 @@
             '今天就是最好的开始',
             '你的潜力远超你的想象',
             '坚持下去，就会看到曙光',
-            '每一步都通向更好的自己'
+            '每一步都通向更好的自己',
+            '成功不是终点，而是新的起点',
+            '不要停下脚步，未来正在等你',
+            '你的梦想比你想象的更大',
+            '今天付出的努力，明天会给你回报',
+            '相信自己，你就是最好的自己',
+            '每个不曾放弃的瞬间，都值得被铭记',
+            '让梦想成为现实的唯一方式就是行动',
+            '今天的汗水，就是明天的收获',
+            '努力不一定成功，但放弃一定失败'
         ],
         humorous: [
             '生活就像编程，偶尔需要debug',
@@ -193,7 +202,13 @@
             '别问我为什么这么瘦，问问我为什么这么秃',
             '程序员的一天，改bug改bug改bug',
             '人生苦短，我选择Python',
-            '钱没了可以再赚，头发没了就没了'
+            '钱没了可以再赚，头发没了就没了',
+            '每天早睡，除了发文章的时候',
+            '键盘敲得响，代码写得像诗，但运行全是错',
+            '我的代码没有bug，是编译器不懂我',
+            '为什么bug总在最后一行出现',
+            '程序员不谈恋爱，因为找不到那个对象',
+            '生活就是一个try-catch，finally里还是单身'
         ],
         philosophical: [
             '成功不是终点，失败不是末日',
@@ -202,16 +217,29 @@
             '真正的强大是知道自己的弱点',
             '每个选择都是新的开始',
             '不要等到完美，开始就是进步',
-            '焦虑不能解决问题，行动可以'
+            '焦虑不能解决问题，行动可以',
+            '所谓运气，只是恰逢其时的努力',
+            '过去已逝，未来未到，珍惜当下',
+            '生活不是等待一场暴风雨过去',
+            '改变的不是世界，而是看待世界的眼睛',
+            '重要的不是你在哪，而是你要去哪',
+            '真正的自由，是做自己的主人'
         ],
         romantic: [
             '你是我最美丽的遇见',
             '有你的每一天都闪闪发光',
-            '爱的陪伴是最长' + '\'' + '情的告白',
+            '爱的陪伴是最长情的告白',
             '遇见你是我最大的幸运',
             '想和你一起看四季更替',
             '你在身边，就是最好的时光',
-            '温柔是人间宝藏'
+            '温柔是人间宝藏',
+            '你是我的星光，照亮我前行的路',
+            '每个清晨想到你，都是幸福的开始',
+            '遇见你之前，我的世界是黑白的',
+            '你不用多说什么，我懂就好',
+            '有你在的每一天，都是情人节',
+            '你是我书里最美好的句子',
+            '想和你一起看日落，直到地老天荒'
         ]
     };
     
@@ -310,7 +338,7 @@
     function shareSentence() {
         if (!currentSentence) return;
         
-        const shareText = currentSentence + '\n—— 来自「每日一句」DeepGreen宇宙科技';
+        const shareText = currentSentence + '\n—— 来自「每日一句' + '」DeepGreen宇宙科技';
         if (navigator.share) {
             navigator.share({ title: '每日一句', text: shareText });
         } else {
