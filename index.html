@@ -26,6 +26,10 @@
             transform: scale(1.05);
             border-color: rgba(255, 255, 255, 0.6);
         }
+        .category-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
         .result-text {
             margin: 16px 12px;
             padding: 20px;
@@ -34,6 +38,9 @@
             line-height: 1.8;
             min-height: 100px;
             font-size: 18px;
+        }
+        .result-text.loading {
+            color: rgba(255, 255, 255, 0.7);
         }
         .action-btn {
             padding: 12px 20px;
@@ -47,6 +54,10 @@
         .action-btn:hover {
             transform: scale(1.05);
             background: rgba(255, 255, 255, 0.25);
+        }
+        .action-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         .toast {
             position: fixed;
@@ -64,7 +75,22 @@
         }
         @keyframes fadeIn {
             0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-            100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity:1; transform: translateX(-50%) translateY(0); }
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         @media (max-width: 640px) {
             body { padding: 12px; }
@@ -90,72 +116,103 @@
         </div>
         
         <div class="flex gap-3 justify-center mt-8">
-            <button onclick="refreshSentence()" class="action-btn">🔄 刷新</button>
-            <button onclick="copySentence()" class="action-btn">📋 复制</button>
-            <button onclick="shareSentence()" class="action-btn">📤 分享</button>
+            <button onclick="refreshSentence()" id="refresh-btn" class="action-btn">🔄 刷新</button>
+            <button onclick="copySentence()" id="copy-btn" class="action-btn">📋 复制</button>
+            <button onclick="shareSentence()" id="share-btn" class="action-btn">📤 分享</button>
         </div>
     </div>
 
 <script>
-    const sentences = {
-        motivational: [
-            '每一次努力都是幸运的起点',
-            '相信自己的力量，你能做到的',
-            '阳光总在风雨后',
-            '今天就是最好的开始',
-            '你的潜力远超你的想象',
-            '坚持下去，就会看到曙光',
-            '每一步都通向更好的自己'
-        ],
-        humorous: [
-            '生活就像编程，偶尔需要debug',
-            '我的发际线是早睡早起',
-            '减肥从明天开始',
-            '别问我为什么这么瘦，问问我为什么这么秃',
-            '程序员的一天，改bug改bug改bug',
-            '人生苦短，我选择Python',
-            '钱没了可以再赚，头发没了就没了'
-        ],
-        philosophical: [
-            '成功不是终点，失败不是末日',
-            '时间会治愈一切',
-            '路要一步步走',
-            '真正的强大是知道自己的弱点',
-            '每个选择都是新的开始',
-            '不要等到完美，开始就是进步',
-            '焦虑不能解决问题，行动可以'
-        ],
-        romantic: [
-            '你是我最美丽的遇见',
-            '有你的每一天都闪闪发光',
-            '爱的陪伴是最长情的告白',
-            '遇见你是我最大的幸运',
-            '想和你一起看四季更替',
-            '你在身边，就是最好的时光',
-            '温柔是人间宝藏'
-        ]
+    const API_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+    const API_KEY = '64c2b665-f443-4b6f-8cb1-7e047832282b';
+    const MODEL = 'doubao-seed-2.0-code';
+    
+    const CATEGORY_PROMPTS = {
+        motivational: '生成一句励志的话，温暖有力量，30字以内，不要重复，要有新意',
+        humorous: '生成一句幽默的话，让人会心一笑，30字以内，要有趣但不粗俗',
+        philosophical: '生成一句富有哲理的话，引人深思，30字以内，有深度',
+        romantic: '生成一句浪漫的情话，甜蜜动人，30字以内，真挚感人'
     };
     
     let currentCategory = 'motivational';
     let currentSentence = '';
+    let isLoading = false;
     
-    function getRandomSentence(categoryArray) {
-        const randomIndex = Math.floor(Math.random() * categoryArray.length);
-        return categoryArray[randomIndex];
+    async function callAI(prompt) {
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: MODEL,
+                    messages: [{
+                        role: 'user',
+                        content: prompt
+                    }],
+                    temperature: 0.8,
+                    max_tokens: 50
+                })
+            });
+            
+            const data = await response.json();
+            return data.choices[0].message.content.trim();
+        } catch (error) {
+            console.error('API Error:', error);
+            return null;
+        }
     }
     
-    function getSentence(category) {
+    async function getSentence(category) {
+        if (isLoading) return;
+        
         updateCategoryUI(category);
         currentCategory = category;
-        const sentence = getRandomSentence(sentences[category]);
-        displaySentence(sentence);
-        currentSentence = sentence;
+        
+        setButtonsDisabled(true);
+        showLoading();
+        
+        const prompt = CATEGORY_PROMPTS[category];
+        const sentence = await callAI(prompt);
+        
+        if (sentence) {
+            currentSentence = sentence;
+            displaySentence(sentence);
+            showToast('生成成功 ✅');
+        } else {
+            showToast('生成失败，请重试');
+        }
+        
+        setButtonsDisabled(false);
     }
     
-    function refreshSentence() {
-        const sentence = getRandomSentence(sentences[currentCategory]);
-        displaySentence(sentence);
-        currentSentence = sentence;
+    async function refreshSentence() {
+        if (isLoading) return;
+        
+        setButtonsDisabled(true);
+        showLoading();
+        
+        const prompt = CATEGORY_PROMPTS[currentCategory] + '，换一个不同风格的';
+        const sentence = await callAI(prompt);
+        
+        if (sentence) {
+            currentSentence = sentence;
+            displaySentence(sentence);
+            showToast('刷新成功 ✅');
+        } else {
+            showToast('刷新失败，请重试');
+        }
+        
+        setButtonsDisabled(false);
+    }
+    
+    function showLoading() {
+        const sentenceEl = document.getElementById('sentence');
+        sentenceEl.innerHTML = '<div class="loading-spinner"></div>AI正在生成中...';
+        sentenceEl.classList.add('loading');
+        isLoading = true;
     }
     
     function displaySentence(sentence) {
@@ -163,8 +220,10 @@
         sentenceEl.style.opacity = '0';
         setTimeout(function() {
             sentenceEl.textContent = sentence;
+            sentenceEl.classList.remove('loading');
             sentenceEl.style.transition = 'opacity 0.3s';
-            sentenceEl.style.opacity = '1' + '';
+            sentenceEl.style.opacity = '1';
+            isLoading = false;
         }, 50);
     }
     
@@ -179,8 +238,14 @@
         });
     }
     
+    function setButtonsDisabled(disabled) {
+        document.querySelectorAll('.category-btn, .action-btn').forEach(function(btn) {
+            btn.disabled = disabled;
+        });
+    }
+    
     function copySentence() {
-        if (navigator.clipboard) {
+        if (navigator.clipboard && currentSentence) {
             navigator.clipboard.writeText(currentSentence).then(function() {
                 showToast('已复制到剪贴板 ✅');
             });
@@ -190,12 +255,13 @@
     }
     
     function shareSentence() {
+        if (!currentSentence) return;
+        
         const shareText = currentSentence + '\n—— 来自「每日一句」DeepGreen宇宙科技';
         if (navigator.share) {
             navigator.share({ title: '每日一句', text: shareText });
         } else {
             copySentence();
-            showToast('已复制，可以分享给朋友了 ✅');
         }
     }
     
