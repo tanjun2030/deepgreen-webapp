@@ -98,27 +98,64 @@
 
 <script>
     const sentences = {
-        motivational: ['每一次努力都是幸运的起点', '相信自己的力量，你能做到的', '阳光总在风雨后'],
-        humorous: ['生活就像编程，偶尔需要debug', '我的发际线是早睡早起', '减肥从明天开始'],
-        philosophical: ['成功不是终点，失败不是末日', '时间会治愈一切', '路要一步步走'],
-        romantic: ['你是我最美丽的遇见', '有你的每一天都闪闪发光', '爱的陪伴是最长情的告白']
+        motivational: [
+            '每一次努力都是幸运的起点',
+            '相信自己的力量，你能做到的',
+            '阳光总在风雨后',
+            '今天就是最好的开始',
+            '你的潜力远超你的想象',
+            '坚持下去，就会看到曙光',
+            '每一步都通向更好的自己'
+        ],
+        humorous: [
+            '生活就像编程，偶尔需要debug',
+            '我的发际线是早睡早起',
+            '减肥从明天开始',
+            '别问我为什么这么瘦，问问我为什么这么秃',
+            '程序员的一天，改bug改bug改bug',
+            '人生苦短，我选择Python',
+            '钱没了可以再赚，头发没了就没了'
+        ],
+        philosophical: [
+            '成功不是终点，失败不是末日',
+            '时间会治愈一切',
+            '路要一步步走',
+            '真正的强大是知道自己的弱点',
+            '每个选择都是新的开始',
+            '不要等到完美，开始就是进步',
+            '焦虑不能解决问题，行动可以'
+        ],
+        romantic: [
+            '你是我最美丽的遇见',
+            '有你的每一天都闪闪发光',
+            '爱的陪伴是最长情的告白',
+            '遇见你是我最大的幸运',
+            '想和你一起看四季更替',
+            '你在身边，就是最好的时光',
+            '温柔是人间宝藏'
+        ]
     };
     
     let currentCategory = 'motivational';
     let currentSentence = '';
     
+    function getRandomSentence(categoryArray) {
+        const randomIndex = Math.floor(Math.random() * categoryArray.length);
+        return categoryArray[randomIndex];
+    }
+    
     function getSentence(category) {
         updateCategoryUI(category);
         currentCategory = category;
-        const today = new Date();
-        const index = (today.getDate() + category.length) % sentences[category].length;
-        const sentence = sentences[category][index];
+        const sentence = getRandomSentence(sentences[category]);
         displaySentence(sentence);
         currentSentence = sentence;
     }
     
     function refreshSentence() {
-        getSentence(currentCategory);
+        const sentence = getRandomSentence(sentences[currentCategory]);
+        displaySentence(sentence);
+        currentSentence = sentence;
     }
     
     function displaySentence(sentence) {
@@ -127,7 +164,7 @@
         setTimeout(function() {
             sentenceEl.textContent = sentence;
             sentenceEl.style.transition = 'opacity 0.3s';
-            sentenceEl.style.opacity = '1';
+            sentenceEl.style.opacity = '1' + '';
         }, 50);
     }
     
@@ -143,9 +180,13 @@
     }
     
     function copySentence() {
-        navigator.clipboard.writeText(currentSentence).then(function() {
-            showToast('已复制到剪贴板 ✅');
-        });
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(currentSentence).then(function() {
+                showToast('已复制到剪贴板 ✅');
+            });
+        } else {
+            showToast('复制失败，请手动复制');
+        }
     }
     
     function shareSentence() {
@@ -153,9 +194,8 @@
         if (navigator.share) {
             navigator.share({ title: '每日一句', text: shareText });
         } else {
-            navigator.clipboard.writeText(shareText).then(function() {
-                showToast('已复制，可以分享给朋友了 ✅');
-            });
+            copySentence();
+            showToast('已复制，可以分享给朋友了 ✅');
         }
     }
     
