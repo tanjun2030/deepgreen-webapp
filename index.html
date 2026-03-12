@@ -26,6 +26,10 @@
             transform: scale(1.05);
             border-color: rgba(255, 255, 255, 0.6);
         }
+        .category-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
         .result-text {
             margin: 16px 12px;
             padding: 20px;
@@ -34,6 +38,9 @@
             line-height: 1.8;
             min-height: 100px;
             font-size: 18px;
+        }
+        .result-text.loading {
+            color: rgba(255, 255, 255, 0.7);
         }
         .action-btn {
             padding: 12px 20px;
@@ -47,6 +54,10 @@
         .action-btn:hover {
             transform: scale(1.05);
             background: rgba(255, 255, 255, 0.25);
+        }
+        .action-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         .toast {
             position: fixed;
@@ -65,6 +76,21 @@
         @keyframes fadeIn {
             0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
             100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         @media (max-width: 640px) {
             body { padding: 12px; }
@@ -85,76 +111,94 @@
             <button onclick="getSentence('romantic')" class="category-btn" data-category="romantic">❤️ 情话</button>
         </div>
         
-        <div class="result-text text-white text-center">
+        <div class="result-text text loading text-center">
             <p id="sentence">点击按钮获取每日一句...</p>
         </div>
         
         <div class="flex gap-3 justify-center mt-8">
-            <button onclick="refreshSentence()" class="action-btn">🔄 刷新</button>
-            <button onclick="copySentence()" class="action-btn">📋 复制</button>
-            <button onclick="shareSentence()" class="action-btn">📤 分享</button>
+            <button onclick="refreshSentence()" id="refresh-btn" class="action-btn">🔄 刷新</button>
+            <button onclick="copySentence()" id="copy-btn" class="action-btn">📋 复制</button>
+            <button onclick="shareSentence()" id="share-btn" class="action-btn">📤 分享</button>
         </div>
     </div>
 
 <script>
-    const sentences = {
-        motivational: [
-            '每一次努力都是幸运的起点',
-            '相信自己的力量，你能做到的',
-            '阳光总在风雨后',
-            '今天就是最好的开始',
-            '你的潜力远超你的想象',
-            '坚持下去，就会看到曙光',
-            '每一步都通向更好的自己'
-        ],
-        humorous: [
-            '生活就像编程，偶尔需要debug',
-            '我的发际线是早睡早起',
-            '减肥从明天开始',
-            '别问我为什么这么瘦，问问我为什么这么秃',
-            '程序员的一天，改bug改bug改bug',
-            '人生苦短，我选择Python',
-            '钱没了可以再赚，头发没了就没了'
-        ],
-        philosophical: [
-            '成功不是终点，失败不是末日',
-            '时间会治愈一切',
-            '路要一步步走',
-            '真正的强大是知道自己的弱点',
-            '每个选择都是新的开始',
-            '不要等到完美，开始就是进步',
-            '焦虑不能解决问题，行动可以'
-        ],
-        romantic: [
-            '你是我最美丽的遇见',
-            '有你的每一天都闪闪发光',
-            '爱的陪伴是最长情的告白',
-            '遇见你是我最大的幸运',
-            '想和你一起看四季更替',
-            '你在身边，就是最好的时光',
-            '温柔是人间宝藏'
-        ]
-    };
+    const BACKEND_API = 'https://vercel.com/tanjun2030s-projects/deepgreen-backend/api/generate';
     
     let currentCategory = 'motivational';
     let currentSentence = '';
+    let isLoading = false;
     
-    function getRandomSentence(categoryArray) {
-        const randomIndex = Math.floor(Math.random() * categoryArray.length);
-        return categoryArray[randomIndex];
+    async function callBackend(category) {
+        try {
+            const response = await fetch(BACKEND_API, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ category: category })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.content) {
+                return data.content;
+            } else {
+                console.error('Backend error:', data);
+                return null;
+            }
+        } catch (error) {
+            console.error('API Error:', error);
+            return null;
+        }
     }
     
-    function getSentence(category) {
+    async function getSentence(category) {
+        if (isLoading) return;
+        
         updateCategoryUI(category);
         currentCategory = category;
-        const sentence = getRandomSentence(sentences[category]);
-        displaySentence(sentence);
-        currentSentence = sentence;
+        
+        setButtonsDisabled(true);
+        showLoading();
+        
+        const sentence = await callBackend(category);
+        
+        if (sentence) {
+            currentSentence = sentence;
+            displaySentence(sentence);
+            showToast('生成成功 ✅');
+        } else {
+            showToast('生成失败，请重试');
+        }
+        
+        setButtonsDisabled(false);
     }
     
-    function refreshSentence() {
-        const sentence = getRandomSentence(sentences[currentCategory]);
-       );
+    async function refreshSentence() {
+        if (isLoading) return;
+        
+        setButtonsDisabled(true);
+        showLoading();
+        
+        const sentence = await callBackend(currentCategory);
+        
+        if (sentence) {
+            currentSentence = sentence;
+            displaySentence(sentence);
+            showToast('刷新成功 ✅');
+        } else {
+            showToast('刷新失败，请重试');
+        }
+        
+        setButtonsDisabled(false);
+    }
+    
+    function showLoading() {
+        const sentenceEl = document.getElementById('sentence');
+        sentenceEl.innerHTML = '<span class="loading-spinner"></span>AI正在生成中...';
+        sentenceEl.classList.add('loading');
+        isLoading = true;
     }
     
     function displaySentence(sentence) {
@@ -162,15 +206,17 @@
         sentenceEl.style.opacity = '0';
         setTimeout(function() {
             sentenceEl.textContent = sentence;
+            sentenceEl.classList.remove('loading');
             sentenceEl.style.transition = 'opacity 0.3s';
             sentenceEl.style.opacity = '1';
+            isLoading = false;
         }, 50);
     }
     
     function updateCategoryUI(category) {
         const buttons = document.querySelectorAll('.category-btn');
         buttons.forEach(function(btn) {
-            if (btn.dataset.category === category) {
+            if (btn.dataset.category ===) {
                 btn.classList.add('active');
             } else {
                 btn.classList.remove('active');
@@ -178,8 +224,14 @@
         });
     }
     
+    function setButtonsDisabled(disabled) {
+        document.querySelectorAll('.category-btn, .action-btn').forEach(function(btn) {
+            btn.disabled = disabled;
+        });
+    }
+    
     function copySentence() {
-        if (navigator.clipboard) {
+        if (navigator.clipboard && currentSentence) {
             navigator.clipboard.writeText(currentSentence).then(function() {
                 showToast('已复制到剪贴板 ✅');
             });
@@ -189,6 +241,8 @@
     }
     
     function shareSentence() {
+        if (!currentSentence) return;
+        
         const shareText = currentSentence + '\n—— 来自「每日一句」DeepGreen宇宙科技';
         if (navigator.share) {
             navigator.share({ title: '每日一句', text: shareText });
@@ -210,6 +264,7 @@
         }, 2000);
     }
     
+    // 初始化：自动加载第一个分类
     getSentence('motivational');
 </script>
 </body>
