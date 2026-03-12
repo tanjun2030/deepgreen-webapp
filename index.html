@@ -159,7 +159,7 @@
         
         <div class="category-buttons">
             <button class="category-btn active" data-category="motivational" onclick="getSentence('motivational')">💪 励志</button>
-            <button class="category-btn" data-category="humorous" onclick="getSentence('humorous')">😄 幽默</button>
+        <button class="category-btn" data-category="humorous" onclick="getSentence('humorous')">😄 幽默</button>
             <button class="category-btn" data-category="philosophical" onclick="getSentence('philosophical')">🤔 哲理</button>
             <button class="category-btn" data-category="romantic" onclick="getSentence('romantic')">❤️ 情话</button>
         </div>
@@ -207,7 +207,7 @@
         romantic: [
             '你是我最美丽的遇见',
             '有你的每一天都闪闪发光',
-            '爱的陪伴是最长情的告白',
+            '爱的陪伴是最长' + '\'' + '情的告白',
             '遇见你是我最大的幸运',
             '想和你一起看四季更替',
             '你在身边，就是最好的时光',
@@ -215,24 +215,60 @@
         ]
     };
     
+    // 记录每个分类已显示的句子，避免刷新时重复
+    const shownSentences = {
+        motivational: new Set(),
+        humorous: new Set(),
+        philosophical: new Set(),
+        romantic: new Set()
+    };
+    
     let currentCategory = 'motivational';
     let currentSentence = '';
     
-    function getRandomSentence(categoryArray) {
-        const randomIndex = Math.floor(Math.random() * categoryArray.length);
-        return categoryArray[randomIndex];
+    function getRandomUniqueSentence(category, categorySentences, shownSet) {
+        // 获取未显示过的句子
+        const available = categorySentences.filter(s => !shownSet.has(s));
+        
+        // 如果所有句子都显示过了，重置记录
+        if (available.length === 0) {
+            shownSet.clear();
+            shownSentences[category] = new Set();
+            available.push(...categorySentences);
+        }
+        
+        // 随机选择一个未显示的句子
+        const randomIndex = Math.floor(Math.random() * available.length);
+        const selected = available[randomIndex];
+        
+        // 记录到已显示集合
+        shownSet.add(selected);
+        shownSentences[category] = shownSet;
+        
+        return selected;
     }
     
     function getSentence(category) {
         updateCategoryUI(category);
         currentCategory = category;
-        const sentence = getRandomSentence(sentences[category]);
+        
+        const sentence = getRandomUniqueSentence(
+            category, 
+            sentences[category], 
+            shownSentences[category]
+        );
+        
         displaySentence(sentence);
         currentSentence = sentence;
     }
     
     function refreshSentence() {
-        const sentence = getRandomSentence(sentences[currentCategory]);
+        const sentence = getRandomUniqueSentence(
+            currentCategory, 
+            sentences[currentCategory], 
+            shownSentences[currentCategory]
+        );
+        
         displaySentence(sentence);
         currentSentence = sentence;
     }
@@ -241,6 +277,7 @@
         const sentenceEl = document.getElementById('sentence');
         sentenceEl.style.opacity = '0';
         sentenceEl.style.transform = 'translateY(10px)';
+        
         setTimeout(function() {
             sentenceEl.textContent = sentence;
             sentenceEl.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
@@ -287,6 +324,7 @@
         toast.textContent = message;
         toast.className = 'toast';
         document.body.appendChild(toast);
+        
         setTimeout(function() {
             toast.style.opacity = '0';
             toast.style.transform = 'translateX(-50%) translateY(-100px)';
